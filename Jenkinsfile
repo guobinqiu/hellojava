@@ -7,6 +7,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'mvn clean package'
+                sh "mv target/hellojava.war target/hellojava-${GIT_COMMIT}.war"
             }
         }
     }
