@@ -12,7 +12,9 @@ pipeline {
         }
         stage('Deploy with Ansible') {
             steps {
-                sh 'ansible-playbook -u guobin -e "ansible_ssh_private_key_file=$SSH_KEY,artifact=/var/lib/jenkins/workspace/hellojava/target/hellojava-${GIT_COMMIT}.war" /etc/ansible/hellojava.yml'
+                withCredentials([sshUserPrivateKey(credentialsId: '54e6cd1d-d917-4427-ac13-6d7ff0abdc39', keyFileVariable: 'SSH_KEY')]) {
+                    sh 'ansible-playbook -u guobin -e "ansible_ssh_private_key_file=$SSH_KEY,artifact=/var/lib/jenkins/workspace/hellojava/target/hellojava-${GIT_COMMIT}.war" /etc/ansible/hellojava.yml'
+                }
             }
         }
     }
