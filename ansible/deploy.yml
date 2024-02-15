@@ -1,6 +1,5 @@
 - hosts: java
   gather_facts: no
-  become: yes
   tasks:
     - name: Copy war file to remote Tomcat webapps directory
       copy:
@@ -10,3 +9,4 @@
       systemd:
         name: tomcat9
         state: restarted
+      become: yes
