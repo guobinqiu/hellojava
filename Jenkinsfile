@@ -17,7 +17,13 @@ pipeline {
                     string(credentialsId: '563e5a99-0d79-4b2d-a2e8-0061db54fbf5', variable: 'ANSIBLE_BECOME_PASS')
                 ]) {
                     sh '''
-                        ansible-playbook -u guobin -e "ansible_ssh_private_key_file=${SSH_KEY} artifact=target/hellojava-${GIT_COMMIT}.war ansible_become_password=${ANSIBLE_BECOME_PASS}" -i inventory.ini deploy.yml
+                        ansible-playbook \
+                        -u guobin \
+                        -e "ansible_ssh_private_key_file=${SSH_KEY}" \
+                        -e "artifact=target/hellojava-${GIT_COMMIT}.war" \
+                        -e "ansible_become_password=${ANSIBLE_BECOME_PASS}" \
+                        -i inventory.ini \
+                        deploy.yml
                     '''
                 }
             }
