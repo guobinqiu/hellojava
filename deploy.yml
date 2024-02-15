@@ -1,0 +1,12 @@
+- hosts: java
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Copy war file to remote Tomcat webapps directory
+      copy:
+        src: "{{ artifact }}"
+        dest: "/var/lib/tomcat9/webapps/hellojava.war"
+    - name: Restart Tomcat
+      systemd:
+        name: tomcat9
+        state: restarted
