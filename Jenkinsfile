@@ -15,7 +15,7 @@ pipeline {
                 withCredentials([sshUserPrivateKey(credentialsId: '54e6cd1d-d917-4427-ac13-6d7ff0abdc39', keyFileVariable: 'SSH_KEY')]) {
                     //sh 'ansible-playbook -u guobin -e "ansible_ssh_private_key_file=$SSH_KEY" /etc/ansible/test.yml'
                     //sh 'ansible-playbook -u guobin -e "ansible_ssh_private_key_file=${SSH_KEY} artifact=/var/lib/jenkins/workspace/hellojava/target/hellojava-${GIT_COMMIT}.war" -i /etc/ansible/hosts /etc/ansible/hellojava.yml'
-                    sh 'ansible-playbook -u guobin -e "ansible_ssh_private_key_file=${SSH_KEY} artifact=target/hellojava-${GIT_COMMIT}.war" -i inventory.ini deploy.yml'
+                    sh 'ansible-playbook -u guobin -e "ansible_ssh_private_key_file=${SSH_KEY} artifact=/var/lib/jenkins/workspace/hellojava/target/hellojava-${GIT_COMMIT}.war" -i inventory.ini deploy.yml'
                 }
             }
         }
