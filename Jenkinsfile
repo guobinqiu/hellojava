@@ -20,7 +20,7 @@ pipeline {
                         ansible-playbook \
                         -u guobin \
                         -e "ansible_ssh_private_key_file=${SSH_KEY}" \
-                        -e "artifact=/var/lib/jenkins/hellojava/target/hellojava-${GIT_COMMIT}.war" \
+                        -e "artifact=/var/lib/jenkins/workspace/hellojava/target/hellojava-${GIT_COMMIT}.war" \
                         -e "ansible_become_password=${ANSIBLE_BECOME_PASS}" \
                         -i ansible/inventory.ini \
                         ansible/deploy.yml
