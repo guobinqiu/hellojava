@@ -1,6 +1,6 @@
 - hosts: java
   gather_facts: no
-  become: yes
+  become: no
   tasks:
     - name: Copy war file to remote Tomcat webapps directory
       copy:
