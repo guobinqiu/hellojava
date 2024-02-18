@@ -6,8 +6,9 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'mvn package'
-                sh "mv target/hellojava.war target/hellojava-${GIT_COMMIT}.war"
+                sh 'mvn clean package' //清理+打包
+                sh "mv target/hellojava.war target/hellojava-${GIT_COMMIT}.war" //重命名包名
+                archiveArtifacts artifacts: "target/hellojava-${GIT_COMMIT}", fingerprint: true //加入本地制品库
             }
         }
         stage('Deploy with Ansible') {
