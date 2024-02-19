@@ -11,6 +11,13 @@ pipeline {
                 archiveArtifacts artifacts: "target/hellojava-${GIT_COMMIT}.war", fingerprint: true //加入本地制品库
             }
         }
+        stage('Static Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube_server') {
+                    sh 'sonar-scanner'
+                }
+            }
+        }
         stage('Deploy with Ansible') {
             steps {
                 withCredentials([
