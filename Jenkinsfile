@@ -12,12 +12,15 @@ pipeline {
             }
         }
         stage('Static Analysis') {
+            //https://docs.sonarsource.com/sonarqube/latest/setup-and-upgrade/install-the-server/introduction/
+            //https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner/
             steps {
-                withSonarQubeEnv('sonarqube_server') {
-                    def scannerhome = tool 'sonarqube_scanner'
-                    withEnv(["PATH+=${scannerHome}/bin"]) {
-                        sh 'sonar-scanner'
-                    }
+                //安装SonarQube Scanner插件 >> 全局工具配置 > SonarQube Scanner 安装 > Name, SONAR_RUNNER_HOME
+                tool name: 'sonarqube_scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+
+                //系统管理 >> SonarQube servers > Name, Server URL, Server authentication token
+                withSonarQubeEnv('sonarqube_server') {// 从Jenkins配置中获取SonarQube服务器的URL和身份验证令牌
+                    sh 'sonar-scanner'
                 }
             }
         }
