@@ -4,7 +4,7 @@ pipeline {
     tools {
         maven 'mvn_3.9.6'
     }
-    
+
     environment {
         GOPROXY = 'https://goproxy.cn,direct'
         // KUBECONFIG = '/var/lib/jenkins/.kube/config'
@@ -31,11 +31,11 @@ pipeline {
                     usernamePassword(credentialsId: '75d62f1f-d4a5-4033-b0b9-eb05ffb862be', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_TOKEN')
                 ]) {
                     sh """
-                    docker build -t qiuguobin/hellogo -f Dockerfile .
-                    docker tag qiuguobin/hellogo qiuguobin/hellogo-${GIT_COMMIT}
+                    docker build -t qiuguobin/hellojava -f Dockerfile .
+                    docker tag qiuguobin/hellojava qiuguobin/hellojava-${GIT_COMMIT}
                     docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_TOKEN}
-                    docker push qiuguobin/hellogo
-                    docker push qiuguobin/hellogo-${GIT_COMMIT}
+                    docker push qiuguobin/hellojava
+                    docker push qiuguobin/hellojava-${GIT_COMMIT}
                     """
                 }
 
