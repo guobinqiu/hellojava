@@ -1,0 +1,216 @@
+# 形象上说, 我让tekon的step对应jenkins的stage, tekton的script对应jenkins的step
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hellojava
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: key-for-git
+  namespace: hello
+  annotations:
+    tekton.dev/git-0: github.com
+type: kubernetes.io/ssh-auth
+data:
+  ssh-privatekey: LS0tLS1CRUdJTiBPUEVOU1NIIFBS...
+  known_hosts: Z2l0aHViLmNvbSBzc2gtcnNhIEFBQUFCM0...
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: key-for-docker
+  namespace: hellojava
+  annotations:
+    tekton.dev/docker-0: https://index.docker.io/v1/
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: ewoJImF1dGhzIjogewoJCSJodHR...
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: key-for-kube
+  namespace: hellojava
+type: Opaque
+data:
+  config: YXBpVmVyc2lvbjogdjEKY2x1c3RlcnM6C...
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hellojava-auth
+  namespace: hellojava
+secrets:
+  - name: key-for-git
+  - name: key-for-docker
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: hellojava
+  namespace: hellojava
+spec:
+  params:
+    - name: sha
+      type: string
+  workspaces:
+    - name: source
+  sidecars:
+    - name: docker-dind
+      image: docker.m.daocloud.io/docker:dind
+      env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+        - name: DOCKER_HOST
+          value: tcp://0.0.0.0:2375
+      securityContext:
+        privileged: true
+  steps:
+    - name: debug
+      image: busybox
+      script: |
+        #!/usr/bin/env sh
+        echo $(params.sha)
+    - name: checkout
+      image: docker.m.daocloud.io/alpine/git
+      script: |
+        #!/usr/bin/env sh
+        cd $(workspaces.source.path)
+        git clone git@github.com:guobinqiu/hellojava.git .
+    - name: build
+      image: docker.m.daocloud.io/docker
+      env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+      script: |
+        #!/usr/bin/env sh
+        while ! docker info; do sleep 1; done
+        cd $(workspaces.source.path)
+        docker build -t qiuguobin/hellojava -f Dockerfile .
+        docker tag qiuguobin/hellojava qiuguobin/hellojava-$(params.sha)
+        docker push qiuguobin/hellojava
+        docker push qiuguobin/hellojava-$(params.sha)
+    - name: deploy
+      image: docker.m.daocloud.io/lachlanevenson/k8s-kubectl
+      volumeMounts:
+        - name: kubeconfig-volume
+          mountPath: /root/.kube
+      script: |
+        #!/usr/bin/env sh
+        cd $(workspaces.source.path)
+        kubectl apply -f k8s/deploy.yaml
+  volumes:
+    - name: kubeconfig-volume
+      secret:
+        secretName: key-for-kube
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: hellojava-binding
+  namespace: hellojava
+spec:
+  params:
+    - name: sha
+      value: $(body.head_commit.id)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: hellojava-template
+  namespace: hellojava
+spec:
+  params:
+    - name: sha
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: TaskRun
+      metadata:
+        generateName: hellojava-run-
+        namespace: hellojava
+      spec:
+        serviceAccountName: hellojava-auth
+        taskRef:
+          name: hellojava
+        params:
+          - name: sha
+            value: $(tt.params.sha)
+        workspaces:
+          - name: source
+            emptyDir: {}
+        podTemplate:
+          hostAliases:
+            - ip: "192.168.1.10"
+              hostnames:
+                - lb.kubesphere.local
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hellojava-rbac
+  namespace: hellojava
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triggers-hellojava-eventlistener-binding
+  namespace: hellojava
+subjects:
+  - kind: ServiceAccount
+    name: hellojava-rbac
+    namespace: hellojava
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-roles
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: triggers-hellojava-eventlistener-clusterbinding
+subjects:
+  - kind: ServiceAccount
+    name: hellojava-rbac
+    namespace: hellojava
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-clusterroles
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: hellojava-listener
+  namespace: hellojava
+spec:
+  serviceAccountName: hellojava-rbac
+  triggers:
+    - name: hellojava-trigger
+      bindings:
+        - ref: hellojava-binding
+      template:
+        ref: hellojava-template
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-hellojava-listener
+  namespace: hellojava
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "false"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: el-hellojava-listener
+                port:
+                  number: 8080
