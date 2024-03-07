@@ -6,13 +6,6 @@ pipeline {
     }
     
     stages {
-        stage('Build') {
-            steps {
-                sh 'mvn clean package' //清理+打包
-                sh "mv target/hellojava.war target/hellojava-${GIT_COMMIT}.war" //重命名包名
-                archiveArtifacts artifacts: "target/hellojava-${GIT_COMMIT}.war", fingerprint: true //加入本地制品库
-            }
-        }
         stage('Static Analysis') {
             steps {
                 //withSonarQubeEnv是SonarQube Scanner for Jenkins插件提供的一个函数
@@ -21,6 +14,15 @@ pipeline {
                 }
             }
         }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package' //清理+打包
+                sh "mv target/hellojava.war target/hellojava-${GIT_COMMIT}.war" //重命名包名
+                archiveArtifacts artifacts: "target/hellojava-${GIT_COMMIT}.war", fingerprint: true //加入本地制品库
+            }
+        }
+        
         stage('Deploy with Ansible') {
             steps {
                 //withCredentials是Credentials Binding Plugin插件提供的一个函数
