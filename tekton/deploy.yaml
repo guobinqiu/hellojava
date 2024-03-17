@@ -89,9 +89,9 @@ spec:
         while ! docker info; do sleep 1; done
         cd $(workspaces.source.path)
         docker build -t qiuguobin/hellojava -f Dockerfile .
-        docker tag qiuguobin/hellojava qiuguobin/hellojava-$(params.sha)
+        docker tag qiuguobin/hellojava qiuguobin/hellojava:$(params.sha)
         docker push qiuguobin/hellojava
-        docker push qiuguobin/hellojava-$(params.sha)
+        docker push qiuguobin/hellojava:$(params.sha)
     - name: deploy
       image: docker.m.daocloud.io/lachlanevenson/k8s-kubectl
       volumeMounts:
